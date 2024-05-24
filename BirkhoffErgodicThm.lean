@@ -1,6 +1,7 @@
 import Mathlib.Dynamics.BirkhoffSum.Average
 import Mathlib.Dynamics.Ergodic.MeasurePreserving
 import Mathlib.MeasureTheory.Function.L1Space
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 import Mathlib.Tactic
 import BirkhoffErgodicThm.PartialSupsPR
@@ -26,12 +27,20 @@ lemma birkhoffMax_succ : birkhoffMax f φ n.succ x = φ x + 0 ⊔ birkhoffMax f 
   simp_rw [partialSups_apply, Function.comp_apply, ←partialSups_apply]; rfl
 
 abbrev birkhoffMaxDiff (f : α → α) (φ : α → ℝ) (n : ℕ) (x : α) :=
-  birkhoffMax f φ n.succ x - birkhoffMax f φ n (f x)
+  birkhoffMax f φ (n + 1) x - birkhoffMax f φ n (f x)
 
 theorem birkhoffMaxDiff_aux : birkhoffMaxDiff f φ n x = φ x - (0 ⊓ birkhoffMax f φ n (f x)) := by
   rw [sub_eq_sub_iff_add_eq_add, birkhoffMax_succ, add_assoc, add_right_inj]
   change max _ _ + min _ _ = _
   rw [max_add_min, zero_add]
+
+lemma birkhoffMaxDiff_antitone : Antitone (birkhoffMaxDiff f φ) := by
+  intro m n h x
+  rw [birkhoffMaxDiff_aux, birkhoffMaxDiff_aux]
+  apply add_le_add_left
+  simp
+  right
+  exact (birkhoffMax f φ).monotone' h _
 
 @[measurability]
 lemma birkhoffSum_measurable [MeasurableSpace α]
@@ -56,6 +65,7 @@ noncomputable section BirkhoffThm
 open MeasureTheory Filter Topology
 
 variable {α : Type*} [msα : MeasurableSpace α] (μ : Measure α := by volume_tac)
+        [hμ : IsProbabilityMeasure μ]
 
 def birkhoffSup (f : α → α) (φ : α → ℝ) (x : α) : EReal :=
   iSup λ n ↦ ↑(birkhoffSum f φ (n + 1) x)
@@ -126,7 +136,7 @@ lemma divergentSet_invariant'
     {f : α → α} (hf : Measurable f)
     {φ : α → ℝ} (hφ : Measurable φ) :
     MeasurableSet[invSigmaAlg f] (divergentSet f φ) :=
-  /- IMPORTANT: should be `Set.ext divergentSet_invariant` but it is VERY slow -/
+  /- should be `Set.ext divergentSet_invariant` but it is VERY slow -/
   ⟨divergentSet_measurable hf hφ, funext (λ _ ↦ propext divergentSet_invariant)⟩
 
 lemma birkhoffMax_tendsto_top_mem_divergentSet (hx : x ∈ divergentSet f φ) :
@@ -154,13 +164,80 @@ lemma birkhoffMaxDiff_tendsto_mem_divergentSet (hx : x ∈ divergentSet f φ) :
   exact inf_of_le_left (hN i hi)
 
 /- From now on, assume f is measure-preserving and φ is integrable. -/
-variable {f : α → α} (hf : MeasurePreserving f μ μ) (φ : α →₁[μ] ℝ)
+variable {f : α → α} (hf : MeasurePreserving f μ μ)
+         {φ : α → ℝ} (hφ : Integrable φ μ) (hφ' : Measurable φ) /- seems necessary? -/
 
+lemma iterates_integrable : Integrable (φ ∘ f^[i]) μ := by
+  apply (integrable_map_measure _ _).mp
+  · rwa [(hf.iterate i).map_eq]
+  · rw [(hf.iterate i).map_eq]
+    exact hφ.aestronglyMeasurable
+  exact (hf.iterate i).measurable.aemeasurable
 
+lemma birkhoffSum_integrable : Integrable (birkhoffSum f φ n) μ := by
+  unfold birkhoffSum
+  apply integrable_finset_sum
+  intros
+  exact iterates_integrable μ hf hφ
 
--- def birkhoff_ergodic
---     {f : α → α}
---     (_ : MeasurePreserving f μ μ)
---     (ψ : α → ℝ) (_ : Integrable ψ μ) : Prop :=
---   ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f ψ · x) atTop
---   (nhds ((μ[ψ|invariantSubalgebra f]) x))
+lemma birkhoffMax_integrable : Integrable (birkhoffMax f φ n) μ := by
+  unfold birkhoffMax
+  induction' n with n hn
+  · simpa
+  · simp
+    exact Integrable.sup hn (birkhoffSum_integrable μ hf hφ)
+
+lemma birkhoffMaxDiff_integrable : Integrable (birkhoffMaxDiff f φ n) μ := by
+  unfold birkhoffMaxDiff
+  apply Integrable.sub
+  · exact birkhoffMax_integrable μ hf hφ
+  · apply (integrable_map_measure _ _).mp
+    · rw [hf.map_eq]
+      exact (birkhoffMax_integrable μ hf hφ)
+    · rw [hf.map_eq]
+      exact (birkhoffMax_integrable μ hf hφ).aestronglyMeasurable
+    exact hf.measurable.aemeasurable
+
+lemma abs_le_bound (a b c : ℝ) : (a ≤ b ∧ b ≤ c) → abs b ≤ (abs a ⊔ abs c) := sorry
+
+lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
+    Tendsto (λ n ↦ ∫ x in divergentSet f φ, birkhoffMaxDiff f φ n x ∂μ) atTop
+            (𝓝 $ ∫ x in divergentSet f φ, φ x ∂ μ) := by
+  apply MeasureTheory.tendsto_integral_of_dominated_convergence (abs φ ⊔ abs (birkhoffMaxDiff f φ 0))
+  · intro n
+    exact (birkhoffMaxDiff_integrable μ hf hφ).aestronglyMeasurable.restrict
+  · apply Integrable.sup <;> apply Integrable.abs
+    · exact hφ.restrict
+    · exact (birkhoffMaxDiff_integrable μ hf hφ).restrict
+  · intro n
+    apply ae_of_all
+    intro x
+    rw [Real.norm_eq_abs]
+    apply abs_le_bound
+    constructor
+    · rw [birkhoffMaxDiff_aux]; simp
+    · apply birkhoffMaxDiff_antitone (zero_le n)
+  · apply (ae_restrict_iff' _).mpr
+    · apply ae_of_all
+      intro x hx
+      apply birkhoffMaxDiff_tendsto_mem_divergentSet hx
+    · exact divergentSet_measurable hf.measurable hφ'
+
+lemma int_birkhoffMaxDiff_in_divergentSet_pos :
+    0 ≤ ∫ x in divergentSet f φ, birkhoffMaxDiff f φ n x ∂μ := by
+  unfold birkhoffMaxDiff
+  have : (μ.restrict (divergentSet f φ)).map f = μ.restrict (divergentSet f φ)
+  · nth_rw 1 [
+      ←(divergentSet_invariant' hf.measurable hφ').2,
+      ←μ.restrict_map hf.measurable (divergentSet_measurable hf.measurable hφ'),
+      hf.map_eq
+    ]
+  have mi {n : ℕ} := birkhoffMax_integrable μ hf hφ (n := n)
+  have mm {n : ℕ} := birkhoffMax_measurable hf.measurable hφ' (n := n)
+  rw [integral_sub, sub_nonneg]
+  · rw [←integral_map (hf.aemeasurable.restrict) mm.aestronglyMeasurable, this]
+    apply integral_mono mi.restrict mi.restrict ((birkhoffMax f φ).monotone (Nat.le_succ _))
+  · exact mi.restrict
+  · apply (integrable_map_measure mm.aestronglyMeasurable hf.aemeasurable.restrict).mp
+    rw [this]
+    exact mi.restrict
