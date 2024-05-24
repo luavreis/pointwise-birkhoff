@@ -223,7 +223,7 @@ lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
       apply birkhoffMaxDiff_tendsto_mem_divergentSet hx
     · exact divergentSet_measurable hf.measurable hφ'
 
-lemma int_birkhoffMaxDiff_in_divergentSet_pos :
+lemma int_birkhoffMaxDiff_in_divergentSet_nonneg :
     0 ≤ ∫ x in divergentSet f φ, birkhoffMaxDiff f φ n x ∂μ := by
   unfold birkhoffMaxDiff
   have : (μ.restrict (divergentSet f φ)).map f = μ.restrict (divergentSet f φ)
@@ -241,3 +241,9 @@ lemma int_birkhoffMaxDiff_in_divergentSet_pos :
   · apply (integrable_map_measure mm.aestronglyMeasurable hf.aemeasurable.restrict).mp
     rw [this]
     exact mi.restrict
+
+lemma int_in_divergentSet_nonneg :
+    0 ≤ ∫ x in divergentSet f φ, φ x ∂μ :=
+  le_of_tendsto_of_tendsto' tendsto_const_nhds
+    (int_birkhoffMaxDiff_in_divergentSet_tendsto μ hf hφ hφ')
+    (λ _ ↦ int_birkhoffMaxDiff_in_divergentSet_nonneg μ hf hφ hφ')
