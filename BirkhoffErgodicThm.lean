@@ -198,7 +198,9 @@ lemma birkhoffMaxDiff_integrable : Integrable (birkhoffMaxDiff f φ n) μ := by
       exact (birkhoffMax_integrable μ hf hφ).aestronglyMeasurable
     exact hf.measurable.aemeasurable
 
-lemma abs_le_bound (a b c : ℝ) : (a ≤ b ∧ b ≤ c) → abs b ≤ (abs a ⊔ abs c) := sorry
+lemma abs_le_bound {a b c : ℝ} : a ≤ b → b ≤ c → abs b ≤ max (abs a) (abs c) := by
+  simp_rw [abs_eq_max_neg, max_le_iff]
+  aesop
 
 lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
     Tendsto (λ n ↦ ∫ x in divergentSet f φ, birkhoffMaxDiff f φ n x ∂μ) atTop
