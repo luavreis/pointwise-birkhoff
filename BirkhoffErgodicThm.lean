@@ -151,7 +151,7 @@ lemma birkhoffMax_tendsto_top_mem_divergentSet (hx : x ∈ divergentSet f φ) :
   apply le_trans (le_of_lt hN)
   exact le_partialSups_of_le (birkhoffSum f φ ∘ .succ) hn x
 
-lemma birkhoffMaxDiff_tendsto_mem_divergentSet (hx : x ∈ divergentSet f φ) :
+lemma birkhoffMaxDiff_tendsto_of_mem_divergentSet (hx : x ∈ divergentSet f φ) :
     Tendsto (birkhoffMaxDiff f φ · x) atTop (𝓝 (φ x)) := by
   have hx' : f x ∈ divergentSet f φ := divergentSet_invariant.mpr hx
   simp_rw [birkhoffMaxDiff_aux]
@@ -162,6 +162,48 @@ lemma birkhoffMaxDiff_tendsto_mem_divergentSet (hx : x ∈ divergentSet f φ) :
   apply tendsto_atTop_of_eventually_const (i₀ := N)
   intro i hi
   exact inf_of_le_left (hN i hi)
+
+lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
+    (hx : x ∉ divergentSet f φ) :
+    limsup (λ n ↦ (↑(birkhoffAverage ℝ f φ n x) : WithBot ℝ)) atTop ≤ 0 := by
+  /- it suffices to show there are upper bounds smaller than ε for all ε > 0 -/
+  apply le_of_forall_lt'
+  intro ε' hε
+
+  /- it suffices show for ε ≠ ⊥ -/
+  cases' ε' using WithBot.recBotCoe with ε
+  case bot => contradiction
+  simp_rw [WithBot.lt_coe_iff] at hε
+  specialize hε 0 rfl
+
+  /- from `hx` hypothesis, the birkhoff sums are bounded above -/
+  simp [divergentSet, birkhoffSup, iSup_eq_top] at hx
+  rcases hx with ⟨M', M_lt_top, M_is_bound⟩
+
+  /- the upper bound is, in fact, a real number -/
+  cases' M' using EReal.rec with M
+  case h_bot => exfalso; exact (EReal.bot_lt_coe _).not_le (M_is_bound 0)
+  case h_top => contradiction
+  simp_rw [EReal.coe_le_coe_iff] at M_is_bound
+
+  /- use archimedian property of reals -/
+  cases' Archimedean.arch M (half_pos hε) with N hN
+  have upperBound (n : ℕ) (hn : N ≤ n) : birkhoffAverage ℝ f φ (n + 1) x < ε / 2
+  · have : M < (n + 1) • (ε / 2)
+    · exact hN.trans_lt $ smul_lt_smul_of_pos_right (Nat.lt_succ_of_le hn) (half_pos hε)
+    rw [nsmul_eq_smul_cast ℝ] at this
+    apply (inv_smul_lt_iff_of_pos (Nat.cast_pos.mpr (Nat.zero_lt_succ n))).mpr
+    exact (M_is_bound n).trans_lt this
+
+  apply csInf_lt_of_lt (a := ↑(ε / 2)) (OrderBot.bddBelow _)
+  · simp
+    use N + 1
+    intro n hn
+    specialize upperBound n.pred (Nat.le_pred_of_lt hn)
+    rw [←Nat.succ_pred_eq_of_pos (Nat.zero_lt_of_lt hn)]
+    exact le_of_lt upperBound
+  · exact WithBot.coe_lt_coe.mpr (div_two_lt_of_pos hε)
+
 
 /- From now on, assume f is measure-preserving and φ is integrable. -/
 variable {f : α → α} (hf : MeasurePreserving f μ μ)
@@ -216,13 +258,12 @@ lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
     intro x
     rw [Real.norm_eq_abs]
     apply abs_le_bound
-    constructor
     · rw [birkhoffMaxDiff_aux]; simp
     · apply birkhoffMaxDiff_antitone (zero_le n)
   · apply (ae_restrict_iff' _).mpr
     · apply ae_of_all
       intro x hx
-      apply birkhoffMaxDiff_tendsto_mem_divergentSet hx
+      apply birkhoffMaxDiff_tendsto_of_mem_divergentSet hx
     · exact divergentSet_measurable hf.measurable hφ'
 
 lemma int_birkhoffMaxDiff_in_divergentSet_nonneg :
@@ -244,8 +285,7 @@ lemma int_birkhoffMaxDiff_in_divergentSet_nonneg :
     rw [this]
     exact mi.restrict
 
-lemma int_in_divergentSet_nonneg :
-    0 ≤ ∫ x in divergentSet f φ, φ x ∂μ :=
+lemma int_in_divergentSet_nonneg : 0 ≤ ∫ x in divergentSet f φ, φ x ∂μ :=
   le_of_tendsto_of_tendsto' tendsto_const_nhds
     (int_birkhoffMaxDiff_in_divergentSet_tendsto μ hf hφ hφ')
     (λ _ ↦ int_birkhoffMaxDiff_in_divergentSet_nonneg μ hf hφ hφ')
