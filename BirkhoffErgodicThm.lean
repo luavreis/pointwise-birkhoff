@@ -103,12 +103,14 @@ lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet 
     cases' M using EReal.rec with a
     · use 0; apply EReal.bot_lt_coe
     case h_top => contradiction
-  · specialize hx ↑(- φ x + a) (EReal.coe_lt_top _)
+  case mp =>
+    specialize hx ↑(- φ x + a) (EReal.coe_lt_top _)
     cases' hx with N hN
     simp_rw [EReal.coe_lt_coe_iff] at *
     rw [neg_add_lt_iff_lt_add, ←birkhoffSum_succ'] at hN
     use N + 1
-  · cases' hx ↑(φ x + a) (EReal.coe_lt_top _) with N hN
+  case mpr =>
+    cases' hx ↑(φ x + a) (EReal.coe_lt_top _) with N hN
     simp_rw [EReal.coe_lt_coe_iff] at *
     conv =>
       congr
