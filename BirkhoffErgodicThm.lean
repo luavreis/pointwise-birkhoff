@@ -167,16 +167,17 @@ lemma birkhoffMaxDiff_tendsto_of_mem_divergentSet (hx : x ∈ divergentSet f φ)
 
 lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
     (hx : x ∉ divergentSet f φ) :
-    limsup (λ n ↦ (↑(birkhoffAverage ℝ f φ n x) : WithBot ℝ)) atTop ≤ 0 := by
-  /- it suffices to show there are upper bounds smaller than ε for all ε > 0 -/
-  apply le_of_forall_lt'
+    limsup (λ n ↦ (birkhoffAverage ℝ f φ n x).toEReal) atTop ≤ 0 := by
+  /- it suffices to show there are upper bounds ≤ ε for all ε > 0 -/
+  apply le_of_forall_le_of_dense
   intro ε' hε
 
   /- it suffices show for ε ≠ ⊥ -/
-  cases' ε' using WithBot.recBotCoe with ε
-  case bot => contradiction
-  simp_rw [WithBot.lt_coe_iff] at hε
-  specialize hε 0 rfl
+  cases' ε' using EReal.rec with ε
+  case h_bot => contradiction
+  case h_top => exact le_top
+  conv at hε => lhs; change ↑(0 : ℝ)
+  rw [EReal.coe_lt_coe_iff] at hε
 
   /- from `hx` hypothesis, the birkhoff sums are bounded above -/
   simp [divergentSet, birkhoffSup, iSup_eq_top] at hx
@@ -189,22 +190,20 @@ lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   simp_rw [EReal.coe_le_coe_iff] at M_is_bound
 
   /- use archimedian property of reals -/
-  cases' Archimedean.arch M (half_pos hε) with N hN
-  have upperBound (n : ℕ) (hn : N ≤ n) : birkhoffAverage ℝ f φ (n + 1) x < ε / 2
-  · have : M < (n + 1) • (ε / 2)
-    · exact hN.trans_lt $ smul_lt_smul_of_pos_right (Nat.lt_succ_of_le hn) (half_pos hε)
+  cases' Archimedean.arch M hε with N hN
+  have upperBound (n : ℕ) (hn : N ≤ n) : birkhoffAverage ℝ f φ (n + 1) x < ε
+  · have : M < (n + 1) • ε
+    · exact hN.trans_lt $ smul_lt_smul_of_pos_right (Nat.lt_succ_of_le hn) hε
     rw [nsmul_eq_smul_cast ℝ] at this
     apply (inv_smul_lt_iff_of_pos (Nat.cast_pos.mpr (Nat.zero_lt_succ n))).mpr
     exact (M_is_bound n).trans_lt this
 
-  apply csInf_lt_of_lt (a := ↑(ε / 2)) (OrderBot.bddBelow _)
-  · simp
-    use N + 1
-    intro n hn
-    specialize upperBound n.pred (Nat.le_pred_of_lt hn)
-    rw [←Nat.succ_pred_eq_of_pos (Nat.zero_lt_of_lt hn)]
-    exact le_of_lt upperBound
-  · exact WithBot.coe_lt_coe.mpr (div_two_lt_of_pos hε)
+  apply sInf_le; simp
+  use N + 1
+  intro n hn
+  specialize upperBound n.pred (Nat.le_pred_of_lt hn)
+  rw [←Nat.succ_pred_eq_of_pos (Nat.zero_lt_of_lt hn)]
+  apply le_of_lt upperBound
 
 
 /- From now on, assume f is measure-preserving and φ is integrable. -/
