@@ -328,3 +328,35 @@ lemma limsup_birkhoffAverage_nonpos_of_condexp_neg
   apply Eventually.mono _ λ _ ↦ limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   apply ae_iff.mpr; simp
   exact divergentSet_zero_meas_of_condexp_neg μ hf hφ hφ' h
+
+/- can't find those -/
+lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
+    f₁ + f₃ =ᶠ[f] f₂ + f₃ := h.mono λ x hx ↦ by simp [hx]
+lemma Filter.EventuallyEq.add_left {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
+    f₃ + f₁ =ᶠ[f] f₃ + f₂ := h.mono λ x hx ↦ by simp [hx]
+
+
+
+theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
+    ∀ᵐ x ∂μ, limsup (birkhoffAverage ℝ f φ · x) atTop ≤ (μ[φ|invalg f]) x + ε := by
+  let φ' := (φ - (μ[φ|invalg f])) - (λ _ ↦ ε)
+  have φ'int : Integrable φ' μ := (hφ.sub integrable_condexp).sub (integrable_const _)
+  have φ'meas : Measurable φ' :=
+    (hφ'.sub (stronglyMeasurable_condexp.measurable.le invalg_subalgebra)).sub
+      measurable_const
+
+  have : μ[φ'|invalg f] =ᵐ[μ] -(λ _ ↦ ε)
+  · calc μ[φ'|invalg f]
+      _ =ᵐ[μ] μ[(φ - (μ[φ|invalg f]))|invalg f] - μ[(λ _ ↦ ε)|invalg f]
+        := condexp_sub (hφ.sub integrable_condexp) (integrable_const _)
+      _ =ᵐ[μ] μ[φ|invalg f] - μ[(μ[φ|invalg f])|invalg f] - μ[(λ _ ↦ ε)|invalg f]
+        := (condexp_sub hφ integrable_condexp).add_right
+      _ =ᵐ[μ] μ[φ|invalg f] - μ[φ|invalg f] - μ[(λ _ ↦ ε)|invalg f]
+        := (condexp_condexp_of_le (le_of_eq rfl) invalg_subalgebra).neg.add_left.add_right
+      _ = - μ[(λ _ ↦ ε)|invalg f] := by field_simp
+      _ = - (λ _ ↦ ε) := by rw [condexp_const invalg_subalgebra]
+
+  have : ∀ᵐ x ∂μ, (μ[φ'|invalg f]) x < 0 := this.mono λ x hx ↦ by simp [hx, hε]
+  have := limsup_birkhoffAverage_nonpos_of_condexp_neg μ hf φ'int φ'meas this
+
+  sorry
