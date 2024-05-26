@@ -167,9 +167,11 @@ lemma birkhoffMaxDiff_tendsto_of_mem_divergentSet (hx : x ∈ divergentSet f φ)
   intro i hi
   exact inf_of_le_left (hN i hi)
 
+def birkhoffLimsup (f : α → α) (φ : α → ℝ) (x : α) :=
+  limsup (λ n ↦ (birkhoffAverage ℝ f φ n x).toEReal) atTop
+
 lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
-    (hx : x ∉ divergentSet f φ) :
-    limsup (λ n ↦ (birkhoffAverage ℝ f φ n x).toEReal) atTop ≤ 0 := by
+    (hx : x ∉ divergentSet f φ) : birkhoffLimsup f φ x ≤ 0 := by
   /- it suffices to show there are upper bounds ≤ ε for all ε > 0 -/
   apply le_of_forall_le_of_dense
   intro ε' hε
@@ -320,3 +322,9 @@ lemma divergentSet_zero_meas_of_condexp_neg (h : ∀ᵐ x ∂μ, (μ[φ|invalg f
     · exact ae_le_of_ae_lt pos
     · exact integrable_condexp.restrict.neg
   exact this.not_le (int_in_divergentSet_nonneg μ hf hφ hφ')
+
+lemma limsup_birkhoffAverage_nonpos_of_condexp_neg
+    (h : ∀ᵐ x ∂μ, (μ[φ|invalg f]) x < 0) : birkhoffLimsup f φ ≤ᵐ[μ] 0 := by
+  apply Eventually.mono _ λ _ ↦ limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
+  apply ae_iff.mpr; simp
+  exact divergentSet_zero_meas_of_condexp_neg μ hf hφ hφ' h
