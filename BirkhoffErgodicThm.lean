@@ -106,14 +106,13 @@ lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet 
     · use 0; apply EReal.bot_lt_coe
     case h_top => contradiction
   case mp =>
-    specialize hx ↑(- φ x + a) (EReal.coe_lt_top _)
-    cases' hx with N hN
-    simp_rw [EReal.coe_lt_coe_iff] at *
+    cases' hx ↑(- φ x + a) (EReal.coe_lt_top _) with N hN
+    norm_cast at *
     rw [neg_add_lt_iff_lt_add, ←birkhoffSum_succ'] at hN
     use N + 1
   case mpr =>
     cases' hx ↑(φ x + a) (EReal.coe_lt_top _) with N hN
-    simp_rw [EReal.coe_lt_coe_iff] at *
+    norm_cast at *
     conv =>
       congr
       intro i
@@ -125,7 +124,7 @@ lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet 
       · exfalso
         exact (lt_self_iff_false _).mp hNN
       · use N
-        rw [EReal.coe_lt_coe_iff] at hNN
+        norm_cast at hNN
         apply lt_trans hN hNN
     · use N
 
@@ -149,7 +148,7 @@ lemma birkhoffMax_tendsto_top_mem_divergentSet (hx : x ∈ divergentSet f φ) :
   intro b
   simp [divergentSet, birkhoffSup, iSup_eq_top] at hx
   cases' hx b (EReal.coe_lt_top _) with N hN
-  simp [EReal.coe_lt_coe_iff] at hN
+  norm_cast at hN
   use N
   intro n hn
   apply le_trans (le_of_lt hN)
@@ -180,8 +179,7 @@ lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   cases' ε' using EReal.rec with ε
   case h_bot => contradiction
   case h_top => exact le_top
-  conv at hε => lhs; change ↑(0 : ℝ)
-  rw [EReal.coe_lt_coe_iff] at hε
+  norm_cast at hε
 
   /- from `hx` hypothesis, the birkhoff sums are bounded above -/
   simp [divergentSet, birkhoffSup, iSup_eq_top] at hx
@@ -191,7 +189,7 @@ lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   cases' M' using EReal.rec with M
   case h_bot => exfalso; exact (EReal.bot_lt_coe _).not_le (M_is_bound 0)
   case h_top => contradiction
-  simp_rw [EReal.coe_le_coe_iff] at M_is_bound
+  norm_cast at M_is_bound
 
   /- use archimedian property of reals -/
   cases' Archimedean.arch M hε with N hN
