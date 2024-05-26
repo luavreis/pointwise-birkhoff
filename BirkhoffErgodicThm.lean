@@ -65,7 +65,7 @@ def Function.isInvariant (f : α → α) (φ : α → β) : Prop := φ ∘ f = �
 
 end InvariantFun
 
-section InvariantSetsSpace
+section InvariantSets
 
 open MeasureTheory
 
@@ -87,7 +87,7 @@ def invariantSets [ms : MeasurableSpace α] (f : α → α) : MeasurableSpace α
 theorem invariantSets_le [ms : MeasurableSpace α] :
     invariantSets f ≤ ms := λ _ hs => hs.1
 
-theorem InvAlg.invariant_of_measurable
+theorem InvariantSets.invariant_of_measurable
     [MeasurableSpace α] [MeasurableSpace β] [MeasurableSingletonClass β]
     (f : α → α) (φ : α → β) (hφ : Measurable[invariantSets f] φ) :
     Function.isInvariant f φ := by
@@ -96,10 +96,12 @@ theorem InvAlg.invariant_of_measurable
   rw [(hφ $ measurableSet_singleton (φ x)).2]
   rfl
 
-end InvariantSetsSpace
+end InvariantSets
 
 
 noncomputable section BirkhoffThm
+
+namespace Birkhoff
 
 open MeasureTheory Filter Topology
 
@@ -356,25 +358,32 @@ lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ
 lemma Filter.EventuallyEq.add_left {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
     f₃ + f₁ =ᶠ[f] f₃ + f₂ := h.mono λ x hx ↦ by simp [hx]
 
+scoped notation φ "[" μ "," f "]" => μ[φ|invariantSets f]
+
 theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     ∀ᵐ x ∂μ, limsup (birkhoffAverage ℝ f φ · x) atTop ≤ (μ[φ|invariantSets f]) x + ε := by
-
-  let φ' := (φ - (μ[φ|invariantSets f])) - (λ _ ↦ ε)
-  have φ'int : Integrable φ' μ := (hφ.sub integrable_condexp).sub (integrable_const _)
-  have φ'meas : Measurable φ'
+  let ψ := (φ - (μ[φ|invariantSets f])) - (λ _ ↦ ε)
+  have ψ_integrable : Integrable ψ μ := (hφ.sub integrable_condexp).sub (integrable_const _)
+  have ψ_measurable : Measurable ψ
   · suffices Measurable (μ[φ|invariantSets f]) by measurability
     exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
 
-  have : μ[φ'|invariantSets f] =ᵐ[μ] -(λ _ ↦ ε)
-  · calc μ[φ'|invariantSets f]
+  let condexpψ := μ[ψ|invariantSets f]
+  have condexpψ_const : condexpψ =ᵐ[μ] -(λ _ ↦ ε)
+  · calc μ[ψ|invariantSets f]
       _ =ᵐ[μ] _ - _ := condexp_sub (hφ.sub integrable_condexp) (integrable_const _)
       _ =ᵐ[μ] _ - _ - _ := (condexp_sub hφ integrable_condexp).add_right
       _ =ᵐ[μ] _ - _ - _ := (condexp_condexp_of_le (le_of_eq rfl)
                             invariantSets_le).neg.add_left.add_right
       _ = - μ[(λ _ ↦ ε)|invariantSets f] := by simp
       _ = - (λ _ ↦ ε) := by rw [condexp_const invariantSets_le]
+  have condexpψ_invariant : Function.isInvariant f condexpψ
+  · apply InvariantSets.invariant_of_measurable
+    exact stronglyMeasurable_condexp.measurable
 
-  have : ∀ᵐ x ∂μ, (μ[φ'|invariantSets f]) x < 0 := this.mono λ x hx ↦ by simp [hx, hε]
-  have := limsup_birkhoffAverage_nonpos_of_condexp_neg μ hf φ'int φ'meas this
+  have limsup_nonpos : birkhoffLimsup f ψ ≤ᵐ[μ] 0
+  · suffices ∀ᵐ x ∂μ, condexpψ x < 0 from
+      limsup_birkhoffAverage_nonpos_of_condexp_neg μ hf ψ_integrable ψ_measurable this
+    exact condexpψ_const.mono λ x hx ↦ by simp [hx, hε]
 
   sorry
