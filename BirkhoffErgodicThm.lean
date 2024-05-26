@@ -59,6 +59,45 @@ lemma birkhoffMax_measurable [MeasurableSpace α]
 
 end BirkhoffMax
 
+section InvariantFun
+
+def Function.isInvariant (f : α → α) (φ : α → β) : Prop := φ ∘ f = φ
+
+end InvariantFun
+
+section InvariantSetsSpace
+
+open MeasureTheory
+
+def invariantSets [ms : MeasurableSpace α] (f : α → α) : MeasurableSpace α where
+  MeasurableSet' s := ms.MeasurableSet' s ∧ f⁻¹' s = s
+  measurableSet_empty := by
+    constructor
+    · exact ms.measurableSet_empty
+    · rfl
+  measurableSet_compl s hs := by
+    constructor
+    · exact ms.measurableSet_compl s hs.1
+    · simp; exact hs.right
+  measurableSet_iUnion s hs := by
+    constructor
+    · exact ms.measurableSet_iUnion s (λ i ↦ (hs i).left)
+    · simp; exact Set.iUnion_congr (λ i ↦ (hs i).right)
+
+theorem invariantSets_le [ms : MeasurableSpace α] :
+    invariantSets f ≤ ms := λ _ hs => hs.1
+
+theorem InvAlg.invariant_of_measurable
+    [MeasurableSpace α] [MeasurableSpace β] [MeasurableSingletonClass β]
+    (f : α → α) (φ : α → β) (hφ : Measurable[invariantSets f] φ) :
+    Function.isInvariant f φ := by
+  funext x
+  suffices x ∈ f⁻¹' (φ⁻¹' {φ x}) by simpa
+  rw [(hφ $ measurableSet_singleton (φ x)).2]
+  rfl
+
+end InvariantSetsSpace
+
 
 noncomputable section BirkhoffThm
 
@@ -78,23 +117,6 @@ lemma birkhoffSup_measurable
   measurability
 
 def divergentSet (f : α → α) (φ : α → ℝ) : Set α := (birkhoffSup f φ)⁻¹' {⊤}
-
-def invalg (f : α → α) : MeasurableSpace α where
-  MeasurableSet' s := msα.MeasurableSet' s ∧ f⁻¹' s = s
-  measurableSet_empty := by
-    constructor
-    · exact msα.measurableSet_empty
-    · rfl
-  measurableSet_compl s hs := by
-    constructor
-    · exact msα.measurableSet_compl s hs.1
-    · simp; exact hs.right
-  measurableSet_iUnion s hs := by
-    constructor
-    · exact msα.measurableSet_iUnion s (λ i ↦ (hs i).left)
-    · simp; exact Set.iUnion_congr (λ i ↦ (hs i).right)
-
-theorem invalg_subalgebra : invalg f ≤ msα := λ _ hs => hs.1
 
 lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet f φ := by
   constructor
@@ -138,7 +160,7 @@ lemma divergentSet_measurable
 lemma divergentSet_mem_invalg
     {f : α → α} (hf : Measurable f)
     {φ : α → ℝ} (hφ : Measurable φ) :
-    MeasurableSet[invalg f] (divergentSet f φ) :=
+    MeasurableSet[invariantSets f] (divergentSet f φ) :=
   /- should be `Set.ext divergentSet_invariant` but it is VERY slow -/
   ⟨divergentSet_measurable hf hφ, funext (λ _ ↦ propext divergentSet_invariant)⟩
 
@@ -299,15 +321,16 @@ lemma nullMeasurableSpace_le [ms : MeasurableSpace α] {μ : Measure α} :
     ms ≤ NullMeasurableSpace.instMeasurableSpace (α := α) (μ := μ) :=
   λ s hs ↦ ⟨s, hs, ae_eq_refl s⟩
 
-lemma divergentSet_zero_meas_of_condexp_neg (h : ∀ᵐ x ∂μ, (μ[φ|invalg f]) x < 0) :
+lemma divergentSet_zero_meas_of_condexp_neg
+    (h : ∀ᵐ x ∂μ, (μ[φ|invariantSets f]) x < 0) :
     μ (divergentSet f φ) = 0 := by
-  have pos : ∀ᵐ x ∂μ.restrict (divergentSet f φ), 0 < -(μ[φ|invalg f]) x
+  have pos : ∀ᵐ x ∂μ.restrict (divergentSet f φ), 0 < -(μ[φ|invariantSets f]) x
   · apply ae_restrict_of_ae
     exact h.mono λ _ hx ↦ neg_pos.mpr hx
   have ds_meas := divergentSet_mem_invalg hf.measurable hφ'
   by_contra hm; simp_rw [←pos_iff_ne_zero] at hm
   have : ∫ x in divergentSet f φ, φ x ∂μ < 0
-  · rw [←set_integral_condexp invalg_subalgebra hφ ds_meas]
+  · rw [←set_integral_condexp invariantSets_le hφ ds_meas]
     rw [←Left.neg_pos_iff, ←integral_neg, integral_pos_iff_support_of_nonneg_ae]
     · unfold Function.support
       rw [(ae_iff_measure_eq _).mp]
@@ -316,13 +339,13 @@ lemma divergentSet_zero_meas_of_condexp_neg (h : ∀ᵐ x ∂μ, (μ[φ|invalg f
         exact Eventually.ne_of_lt pos
       · apply measurableSet_support
         apply (stronglyMeasurable_condexp).measurable.neg.le
-        apply le_trans invalg_subalgebra nullMeasurableSpace_le
+        apply le_trans invariantSets_le nullMeasurableSpace_le
     · exact ae_le_of_ae_lt pos
     · exact integrable_condexp.restrict.neg
   exact this.not_le (int_in_divergentSet_nonneg μ hf hφ hφ')
 
 lemma limsup_birkhoffAverage_nonpos_of_condexp_neg
-    (h : ∀ᵐ x ∂μ, (μ[φ|invalg f]) x < 0) : birkhoffLimsup f φ ≤ᵐ[μ] 0 := by
+    (h : ∀ᵐ x ∂μ, (μ[φ|invariantSets f]) x < 0) : birkhoffLimsup f φ ≤ᵐ[μ] 0 := by
   apply Eventually.mono _ λ _ ↦ limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   apply ae_iff.mpr; simp
   exact divergentSet_zero_meas_of_condexp_neg μ hf hφ hφ' h
@@ -333,28 +356,25 @@ lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ
 lemma Filter.EventuallyEq.add_left {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
     f₃ + f₁ =ᶠ[f] f₃ + f₂ := h.mono λ x hx ↦ by simp [hx]
 
-
-
 theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
-    ∀ᵐ x ∂μ, limsup (birkhoffAverage ℝ f φ · x) atTop ≤ (μ[φ|invalg f]) x + ε := by
-  let φ' := (φ - (μ[φ|invalg f])) - (λ _ ↦ ε)
+    ∀ᵐ x ∂μ, limsup (birkhoffAverage ℝ f φ · x) atTop ≤ (μ[φ|invariantSets f]) x + ε := by
+
+  let φ' := (φ - (μ[φ|invariantSets f])) - (λ _ ↦ ε)
   have φ'int : Integrable φ' μ := (hφ.sub integrable_condexp).sub (integrable_const _)
-  have φ'meas : Measurable φ' :=
-    (hφ'.sub (stronglyMeasurable_condexp.measurable.le invalg_subalgebra)).sub
-      measurable_const
+  have φ'meas : Measurable φ'
+  · suffices Measurable (μ[φ|invariantSets f]) by measurability
+    exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
 
-  have : μ[φ'|invalg f] =ᵐ[μ] -(λ _ ↦ ε)
-  · calc μ[φ'|invalg f]
-      _ =ᵐ[μ] μ[(φ - (μ[φ|invalg f]))|invalg f] - μ[(λ _ ↦ ε)|invalg f]
-        := condexp_sub (hφ.sub integrable_condexp) (integrable_const _)
-      _ =ᵐ[μ] μ[φ|invalg f] - μ[(μ[φ|invalg f])|invalg f] - μ[(λ _ ↦ ε)|invalg f]
-        := (condexp_sub hφ integrable_condexp).add_right
-      _ =ᵐ[μ] μ[φ|invalg f] - μ[φ|invalg f] - μ[(λ _ ↦ ε)|invalg f]
-        := (condexp_condexp_of_le (le_of_eq rfl) invalg_subalgebra).neg.add_left.add_right
-      _ = - μ[(λ _ ↦ ε)|invalg f] := by field_simp
-      _ = - (λ _ ↦ ε) := by rw [condexp_const invalg_subalgebra]
+  have : μ[φ'|invariantSets f] =ᵐ[μ] -(λ _ ↦ ε)
+  · calc μ[φ'|invariantSets f]
+      _ =ᵐ[μ] _ - _ := condexp_sub (hφ.sub integrable_condexp) (integrable_const _)
+      _ =ᵐ[μ] _ - _ - _ := (condexp_sub hφ integrable_condexp).add_right
+      _ =ᵐ[μ] _ - _ - _ := (condexp_condexp_of_le (le_of_eq rfl)
+                            invariantSets_le).neg.add_left.add_right
+      _ = - μ[(λ _ ↦ ε)|invariantSets f] := by simp
+      _ = - (λ _ ↦ ε) := by rw [condexp_const invariantSets_le]
 
-  have : ∀ᵐ x ∂μ, (μ[φ'|invalg f]) x < 0 := this.mono λ x hx ↦ by simp [hx, hε]
+  have : ∀ᵐ x ∂μ, (μ[φ'|invariantSets f]) x < 0 := this.mono λ x hx ↦ by simp [hx, hε]
   have := limsup_birkhoffAverage_nonpos_of_condexp_neg μ hf φ'int φ'meas this
 
   sorry
