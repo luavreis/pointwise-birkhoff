@@ -79,7 +79,7 @@ lemma birkhoffSup_measurable
 
 def divergentSet (f : α → α) (φ : α → ℝ) : Set α := (birkhoffSup f φ)⁻¹' {⊤}
 
-def invSigmaAlg (f : α → α) : MeasurableSpace α where
+def invalg (f : α → α) : MeasurableSpace α where
   MeasurableSet' s := msα.MeasurableSet' s ∧ f⁻¹' s = s
   measurableSet_empty := by
     constructor
@@ -93,6 +93,8 @@ def invSigmaAlg (f : α → α) : MeasurableSpace α where
     constructor
     · exact msα.measurableSet_iUnion s (λ i ↦ (hs i).left)
     · simp; exact Set.iUnion_congr (λ i ↦ (hs i).right)
+
+theorem invalg_subalgebra : invalg f ≤ msα := λ _ hs => hs.1
 
 lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet f φ := by
   constructor
@@ -134,10 +136,10 @@ lemma divergentSet_measurable
   apply measurableSet_preimage (birkhoffSup_measurable hf hφ)
   apply measurableSet_singleton
 
-lemma divergentSet_invariant'
+lemma divergentSet_mem_invalg
     {f : α → α} (hf : Measurable f)
     {φ : α → ℝ} (hφ : Measurable φ) :
-    MeasurableSet[invSigmaAlg f] (divergentSet f φ) :=
+    MeasurableSet[invalg f] (divergentSet f φ) :=
   /- should be `Set.ext divergentSet_invariant` but it is VERY slow -/
   ⟨divergentSet_measurable hf hφ, funext (λ _ ↦ propext divergentSet_invariant)⟩
 
@@ -172,7 +174,7 @@ lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
   apply le_of_forall_le_of_dense
   intro ε' hε
 
-  /- it suffices show for ε ≠ ⊥ -/
+  /- it suffices show for ε in ℝ -/
   cases' ε' using EReal.rec with ε
   case h_bot => contradiction
   case h_top => exact le_top
@@ -198,6 +200,7 @@ lemma limsup_birkhoffAverage_nonpos_of_not_mem_divergentSet
     apply (inv_smul_lt_iff_of_pos (Nat.cast_pos.mpr (Nat.zero_lt_succ n))).mpr
     exact (M_is_bound n).trans_lt this
 
+  /- conclusion -/
   apply sInf_le; simp
   use N + 1
   intro n hn
@@ -272,7 +275,7 @@ lemma int_birkhoffMaxDiff_in_divergentSet_nonneg :
   unfold birkhoffMaxDiff
   have : (μ.restrict (divergentSet f φ)).map f = μ.restrict (divergentSet f φ)
   · nth_rw 1 [
-      ←(divergentSet_invariant' hf.measurable hφ').2,
+      ←(divergentSet_mem_invalg hf.measurable hφ').2,
       ←μ.restrict_map hf.measurable (divergentSet_measurable hf.measurable hφ'),
       hf.map_eq
     ]
@@ -290,3 +293,30 @@ lemma int_in_divergentSet_nonneg : 0 ≤ ∫ x in divergentSet f φ, φ x ∂μ 
   le_of_tendsto_of_tendsto' tendsto_const_nhds
     (int_birkhoffMaxDiff_in_divergentSet_tendsto μ hf hφ hφ')
     (λ _ ↦ int_birkhoffMaxDiff_in_divergentSet_nonneg μ hf hφ hφ')
+
+/- these seem to be missing? -/
+lemma nullMeasurableSpace_le [ms : MeasurableSpace α] {μ : Measure α} :
+    ms ≤ NullMeasurableSpace.instMeasurableSpace (α := α) (μ := μ) :=
+  λ s hs ↦ ⟨s, hs, ae_eq_refl s⟩
+
+lemma divergentSet_zero_meas_of_condexp_neg (h : ∀ᵐ x ∂μ, (μ[φ|invalg f]) x < 0) :
+    μ (divergentSet f φ) = 0 := by
+  have pos : ∀ᵐ x ∂μ.restrict (divergentSet f φ), 0 < -(μ[φ|invalg f]) x
+  · apply ae_restrict_of_ae
+    exact h.mono λ _ hx ↦ neg_pos.mpr hx
+  have ds_meas := divergentSet_mem_invalg hf.measurable hφ'
+  by_contra hm; simp_rw [←pos_iff_ne_zero] at hm
+  have : ∫ x in divergentSet f φ, φ x ∂μ < 0
+  · rw [←set_integral_condexp invalg_subalgebra hφ ds_meas]
+    rw [←Left.neg_pos_iff, ←integral_neg, integral_pos_iff_support_of_nonneg_ae]
+    · unfold Function.support
+      rw [(ae_iff_measure_eq _).mp]
+      · rwa [Measure.restrict_apply_univ _]
+      · conv in _ ≠ _ => rw [ne_comm]
+        exact Eventually.ne_of_lt pos
+      · apply measurableSet_support
+        apply (stronglyMeasurable_condexp).measurable.neg.le
+        apply le_trans invalg_subalgebra nullMeasurableSpace_le
+    · exact ae_le_of_ae_lt pos
+    · exact integrable_condexp.restrict.neg
+  exact this.not_le (int_in_divergentSet_nonneg μ hf hφ hφ')
