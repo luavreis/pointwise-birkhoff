@@ -25,7 +25,6 @@ theorem birkhoffAverage_eq_of_invariant
   · norm_cast; linarith
   · apply nsmul_eq_smul_cast
 
-open Finset in
 lemma birkhoffAverage_neg {φ : α → ℝ} :
     birkhoffAverage ℝ f (-φ) = - birkhoffAverage ℝ f φ := by
   funext n x
@@ -35,12 +34,12 @@ open Finset in
 lemma birkhoffAverage_add {φ ψ : α → ℝ} :
     birkhoffAverage ℝ f (φ + ψ) = birkhoffAverage ℝ f φ + birkhoffAverage ℝ f ψ := by
   funext n x
-  simp [birkhoffAverage, birkhoffSum]
+  simp [birkhoffAverage, birkhoffSum, sum_add_distrib]
+  linarith
 
+open Finset in
 lemma birkhoffAverage_sub {φ ψ : α → ℝ} :
     birkhoffAverage ℝ f (φ - ψ) = birkhoffAverage ℝ f φ - birkhoffAverage ℝ f ψ := by
   funext n x
-  conv in φ - ψ => change φ + -ψ
-  rw [birkhoffAverage_add, birkhoffAverage_neg]
-  simp
+  simp [birkhoffAverage, birkhoffSum, sum_add_distrib]
   linarith
