@@ -377,22 +377,29 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
 
   refine limsup_nonpos.mono λ x hx => ?_
 
-  suffices ∀ (n : ℕ), birkhoffAverage ℝ f ψ n x = birkhoffAverage ℝ f φ n x - (invCondexp μ f φ x + ε) by
-    simp_rw [this] at hx
-    assumption
+  suffices ∀ (n : ℕ) (hn : 0 < n), birkhoffAverage ℝ f ψ n x = birkhoffAverage ℝ f φ n x - (invCondexp μ f φ x + ε) by
+    simp at hx ⊢
+    intro r hr
+    cases' hx r hr with n hn
+    use n + 1
+    intro k hk
+    rw [←this k (Nat.zero_lt_of_lt hk)]
+    exact hn k (Nat.le_of_succ_le hk)
 
   have condexpφ_invariant : invCondexp μ f φ ∘ f = invCondexp μ f φ
   · apply InvariantSets.invariant_of_measurable
     exact stronglyMeasurable_condexp.measurable
 
-  intro n
+  intro n hn
   simp [
     ψ,
     birkhoffAverage_sub,
     birkhoffAverage_add,
-    birkhoffAverage_eq_of_invariant (show _ = λ _ ↦ ε from rfl),
-    birkhoffAverage_eq_of_invariant condexpφ_invariant
+    birkhoffAverage_eq_of_invariant (show _ = λ _ ↦ ε from rfl) hn,
+    birkhoffAverage_eq_of_invariant condexpφ_invariant hn
   ]
+
+example (m n : ℕ) (h : m + 1 ≤ n) : 0 < n := by exact?
 
 theorem birkhoffErgodicTheorem :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x) atTop (𝓝 (invCondexp μ f φ x)) := by
@@ -434,3 +441,5 @@ theorem birkhoffErgodicTheorem :
   rw [inv_pos_lt_iff_one_lt_mul (Nat.cast_pos.mpr k.succ_pos)]
   norm_num at hk' ⊢
   linarith
+
+#print axioms birkhoffErgodicTheorem
