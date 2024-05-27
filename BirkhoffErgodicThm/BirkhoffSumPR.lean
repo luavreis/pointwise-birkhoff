@@ -31,6 +31,7 @@ lemma birkhoffAverage_neg {φ : α → ℝ} :
   funext n x
   simp [birkhoffAverage, birkhoffSum]
 
+open Finset in
 lemma birkhoffAverage_add {φ ψ : α → ℝ} :
     birkhoffAverage ℝ f (φ + ψ) = birkhoffAverage ℝ f φ + birkhoffAverage ℝ f ψ := by
   funext n x
