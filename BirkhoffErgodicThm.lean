@@ -346,13 +346,16 @@ lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ
 lemma Filter.EventuallyEq.add_left {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
     f₃ + f₁ =ᶠ[f] f₃ + f₂ := h.mono λ x hx ↦ by simp [hx]
 
+-- lemma Filter.EventuallyEq.neg {f : Filter α} {f₁ f₂ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
+--     -f₁ =ᶠ[f] -f₂ := h.mono λ x hx ↦ by simp [hx]
+
 def invCondexp (μ : Measure α := by volume_tac) [IsProbabilityMeasure μ]
     (f : α → α) (φ : α → ℝ) : α → ℝ := μ[φ|invariantSets f]
 
 theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x - (invCondexp μ f φ x + ε)) atTop nonneg := by
-  let ψ := (φ - invCondexp μ f φ) - λ _ ↦ ε
-  have ψ_integrable : Integrable ψ μ := (hφ.sub integrable_condexp).sub (integrable_const _)
+  let ψ := φ - (invCondexp μ f φ + λ _ ↦ ε)
+  have ψ_integrable : Integrable ψ μ := hφ.sub (integrable_condexp.add (integrable_const _))
   have ψ_measurable : Measurable ψ
   · suffices Measurable (invCondexp μ f φ) by measurability
     exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
@@ -360,15 +363,12 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
   let condexpψ := invCondexp μ f ψ
   have condexpψ_const : condexpψ =ᵐ[μ] - λ _ ↦ ε
   · calc μ[ψ|invariantSets f]
-      _ =ᵐ[μ] _ - _ := condexp_sub (hφ.sub integrable_condexp) (integrable_const _)
-      _ =ᵐ[μ] _ - _ - _ := (condexp_sub hφ integrable_condexp).add_right
-      _ =ᵐ[μ] _ - _ - _ := (condexp_condexp_of_le (le_of_eq rfl)
-                            invariantSets_le).neg.add_left.add_right
+      _ =ᵐ[μ] _ - _ := condexp_sub hφ (integrable_condexp.add (integrable_const _))
+      _ =ᵐ[μ] _ - (_ + _) := (condexp_add integrable_condexp (integrable_const _)).neg.add_left
+      _ =ᵐ[μ] _ - (_ + _) := (condexp_condexp_of_le (le_of_eq rfl)
+                            invariantSets_le).add_right.neg.add_left
       _ = - μ[λ _ ↦ ε|invariantSets f] := by simp
       _ = - λ _ ↦ ε := by rw [condexp_const invariantSets_le]
-  have condexpψ_invariant : condexpψ ∘ f = condexpψ
-  · apply InvariantSets.invariant_of_measurable
-    exact stronglyMeasurable_condexp.measurable
 
   have limsup_nonpos : ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f ψ · x) atTop nonneg
   · suffices ∀ᵐ x ∂μ, condexpψ x < 0 from
@@ -381,9 +381,18 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     simp_rw [this] at hx
     assumption
 
+  have condexpφ_invariant : invCondexp μ f φ ∘ f = invCondexp μ f φ
+  · apply InvariantSets.invariant_of_measurable
+    exact stronglyMeasurable_condexp.measurable
+
   intro n
-  unfold birkhoffAverage
-  sorry
+  simp [
+    ψ,
+    birkhoffAverage_sub,
+    birkhoffAverage_add,
+    birkhoffAverage_eq_of_invariant (show _ = λ _ ↦ ε from rfl),
+    birkhoffAverage_eq_of_invariant condexpφ_invariant
+  ]
 
 theorem birkhoffErgodicTheorem :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x) atTop (𝓝 (invCondexp μ f φ x)) := by
