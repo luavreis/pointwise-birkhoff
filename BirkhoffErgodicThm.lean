@@ -5,6 +5,7 @@ import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 import Mathlib.Tactic
 import BirkhoffErgodicThm.PartialSupsPR
+import BirkhoffErgodicThm.BirkhoffSumPR
 
 set_option maxHeartbeats 3000000
 -- set_option trace.profiler true
@@ -383,8 +384,6 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
   intro n
   unfold birkhoffAverage
   sorry
-
-lemma birkhoffAverage_neg : birkhoffAverage ℝ f (-φ) n x = - birkhoffAverage ℝ f φ n x := sorry
 
 theorem birkhoffErgodicTheorem :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x) atTop (𝓝 (invCondexp μ f φ x)) := by

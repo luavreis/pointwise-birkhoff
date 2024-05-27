@@ -13,3 +13,7 @@ theorem birkhoffAverage_eq_of_invariant
   unfold birkhoffAverage
   rw [birkhoffSum_eq_of_invariant h]
   sorry
+
+lemma birkhoffAverage_neg
+    [AddCommMonoid M] [DivisionSemiring R] [Module R M] [Neg M] {φ : α → M} :
+    birkhoffAverage R f (-φ) n x = - birkhoffAverage R f φ n x := sorry
