@@ -377,7 +377,7 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
 
   refine limsup_nonpos.mono λ x hx => ?_
 
-  suffices ∀ (n : ℕ) (hn : 0 < n), birkhoffAverage ℝ f ψ n x = birkhoffAverage ℝ f φ n x - (invCondexp μ f φ x + ε) by
+  suffices ∀ (n : ℕ), 0 < n → birkhoffAverage ℝ f ψ n x = birkhoffAverage ℝ f φ n x - (invCondexp μ f φ x + ε) by
     simp at hx ⊢
     intro r hr
     cases' hx r hr with n hn
@@ -398,8 +398,6 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     birkhoffAverage_eq_of_invariant (show _ = λ _ ↦ ε from rfl) hn,
     birkhoffAverage_eq_of_invariant condexpφ_invariant hn
   ]
-
-example (m n : ℕ) (h : m + 1 ≤ n) : 0 < n := by exact?
 
 theorem birkhoffErgodicTheorem :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x) atTop (𝓝 (invCondexp μ f φ x)) := by
