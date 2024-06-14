@@ -6,9 +6,7 @@ import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 import Mathlib.Tactic
 import BirkhoffErgodicThm.PartialSupsPR
 import BirkhoffErgodicThm.BirkhoffSumPR
-
-set_option maxHeartbeats 3000000
--- set_option trace.profiler true
+import BirkhoffErgodicThm.FilterPR
 
 section BirkhoffMax
 
@@ -338,16 +336,6 @@ lemma limsup_birkhoffAverage_nonpos_of_condexp_neg
   apply Eventually.mono _ λ _ ↦ birkhoffAverage_tendsto_nonpos_of_not_mem_divergentSet
   apply ae_iff.mpr; simp
   exact divergentSet_zero_meas_of_condexp_neg μ hf hφ hφ' h
-
-/- can't find those -/
-lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
-    f₁ + f₃ =ᶠ[f] f₂ + f₃ := h.mono λ x hx ↦ by simp [hx]
-
-lemma Filter.EventuallyEq.add_left {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
-    f₃ + f₁ =ᶠ[f] f₃ + f₂ := h.mono λ x hx ↦ by simp [hx]
-
--- lemma Filter.EventuallyEq.neg {f : Filter α} {f₁ f₂ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
---     -f₁ =ᶠ[f] -f₂ := h.mono λ x hx ↦ by simp [hx]
 
 def invCondexp (μ : Measure α := by volume_tac) [IsProbabilityMeasure μ]
     (f : α → α) (φ : α → ℝ) : α → ℝ := μ[φ|invariantSets f]
