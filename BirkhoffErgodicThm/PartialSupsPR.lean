@@ -16,4 +16,4 @@ theorem partialSups_succ' [SemilatticeSup α] (f : ℕ → α) (n : ℕ) :
     partialSups f n.succ = f 0 ⊔ partialSups (f ∘ .succ) n := by
   induction' n with n hn; rfl
   nth_rw 2 [partialSups_succ]
-  rw [←sup_assoc, ←hn]; rfl
+  rw [← sup_assoc, ← hn]; rfl
