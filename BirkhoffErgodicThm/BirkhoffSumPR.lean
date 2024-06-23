@@ -1,6 +1,8 @@
 import Mathlib.Dynamics.BirkhoffSum.Average
 import Mathlib.Tactic
 
+/-- If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+  then `φ` remains invariant under any number of iterations of `f`. -/
 lemma invariant_iter (h : φ ∘ f = φ) : ∀ i, φ ∘ f^[i] = φ
   | 0 => rfl
   | n + 1 => by
