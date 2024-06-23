@@ -1,8 +1,8 @@
 import Mathlib.Dynamics.BirkhoffSum.Average
 import Mathlib.Tactic
 
-/-- If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
-  then `φ` remains invariant under any number of iterations of `f`. -/
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+then `φ` remains invariant under any number of iterations of `f`. -/
 lemma invariant_iter (h : φ ∘ f = φ) : ∀ i, φ ∘ f^[i] = φ
   | 0 => rfl
   | n + 1 => by
@@ -10,6 +10,9 @@ lemma invariant_iter (h : φ ∘ f = φ) : ∀ i, φ ∘ f^[i] = φ
     rwa [invariant_iter h n]
 
 open Finset in
+
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+then the Birkhoff sum of `φ` over `f` for `n` iterations is equal to `n • φ`.-/
 theorem birkhoffSum_eq_of_invariant [AddCommMonoid M] {φ : α → M}
     (h : φ ∘ f = φ) : birkhoffSum f φ n = n • φ := by
   funext x
@@ -18,6 +21,10 @@ theorem birkhoffSum_eq_of_invariant [AddCommMonoid M] {φ : α → M}
   simp
 
 open Finset in
+
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+then the Birkhoff average of `φ` over `f` for `n` iterations is equal to `φ`
+provided `0 < n`.-/
 theorem birkhoffAverage_eq_of_invariant
     {φ : α → ℝ} (h : φ ∘ f = φ) (hn : 0 < n) : birkhoffAverage ℝ f φ n = φ := by
   funext x
