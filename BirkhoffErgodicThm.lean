@@ -169,11 +169,12 @@ lemma birkhoffAverage_tendsto_nonpos_of_not_mem_divergentSet
     (hx : x ∉ divergentSet f φ) :
     Tendsto (birkhoffAverage ℝ f φ · x) atTop nonneg := by
   /- it suffices to show there are upper bounds ≤ ε for all ε > 0 -/
-  simp
+  simp only [tendsto_iInf, gt_iff_lt, tendsto_principal, Set.mem_Iio, eventually_atTop, ge_iff_le]
   intro ε hε
 
   /- from `hx` hypothesis, the birkhoff sums are bounded above -/
-  simp [divergentSet, birkhoffSup, iSup_eq_top] at hx
+  simp only [divergentSet, Set.mem_preimage, birkhoffSup, Set.mem_singleton_iff, iSup_eq_top,
+    not_forall, not_exists, not_lt, exists_prop] at hx
   rcases hx with ⟨M', M_lt_top, M_is_bound⟩
 
   /- the upper bound is, in fact, a real number -/
@@ -187,16 +188,15 @@ lemma birkhoffAverage_tendsto_nonpos_of_not_mem_divergentSet
   have upperBound (n : ℕ) (hn : N ≤ n) : birkhoffAverage ℝ f φ (n + 1) x < ε
   · have : M < (n + 1) • ε
     · exact hN.trans_lt $ smul_lt_smul_of_pos_right (Nat.lt_succ_of_le hn) hε
-    rw [nsmul_eq_smul_cast ℝ] at this
-    apply (inv_smul_lt_iff_of_pos (Nat.cast_pos.mpr (Nat.zero_lt_succ n))).mpr
-    exact (M_is_bound n).trans_lt this
+    · rw [nsmul_eq_smul_cast ℝ] at this
+      exact (inv_smul_lt_iff_of_pos (Nat.cast_pos.mpr (Nat.zero_lt_succ n))).mpr
+        ((M_is_bound n).trans_lt this)
 
   /- conclusion -/
   use N + 1
   intro n hn
   specialize upperBound n.pred (Nat.le_pred_of_lt hn)
   rwa [← Nat.succ_pred_eq_of_pos (Nat.zero_lt_of_lt hn)]
-
 
 /- From now on, assume f is measure-preserving and φ is integrable. -/
 variable {f : α → α} (hf : MeasurePreserving f μ μ)
@@ -209,29 +209,21 @@ lemma iterates_integrable : Integrable (φ ∘ f^[i]) μ := by
     exact hφ.aestronglyMeasurable
   exact (hf.iterate i).measurable.aemeasurable
 
-lemma birkhoffSum_integrable : Integrable (birkhoffSum f φ n) μ := by
-  unfold birkhoffSum
-  apply integrable_finset_sum
-  intros
-  exact iterates_integrable μ hf hφ
+lemma birkhoffSum_integrable : Integrable (birkhoffSum f φ n) μ :=
+  integrable_finset_sum _ fun _ _ ↦ iterates_integrable μ hf hφ
 
 lemma birkhoffMax_integrable : Integrable (birkhoffMax f φ n) μ := by
   unfold birkhoffMax
   induction' n with n hn
   · simpa
-  · simp
+  · rw [partialSups_succ, Function.comp_apply]
     exact Integrable.sup hn (birkhoffSum_integrable μ hf hφ)
 
 lemma birkhoffMaxDiff_integrable : Integrable (birkhoffMaxDiff f φ n) μ := by
-  unfold birkhoffMaxDiff
-  apply Integrable.sub
+  apply Integrable.sub (birkhoffMax_integrable μ hf hφ)
+  apply (integrable_map_measure _ hf.measurable.aemeasurable).mp <;> rw [hf.map_eq]
   · exact birkhoffMax_integrable μ hf hφ
-  · apply (integrable_map_measure _ _).mp
-    · rw [hf.map_eq]
-      exact (birkhoffMax_integrable μ hf hφ)
-    · rw [hf.map_eq]
-      exact (birkhoffMax_integrable μ hf hφ).aestronglyMeasurable
-    exact hf.measurable.aemeasurable
+  · exact (birkhoffMax_integrable μ hf hφ).aestronglyMeasurable
 
 lemma abs_le_bound {a b c : ℝ} : a ≤ b → b ≤ c → abs b ≤ max (abs a) (abs c) := by
   simp_rw [abs_eq_max_neg, max_le_iff]
