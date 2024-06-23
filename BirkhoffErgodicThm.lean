@@ -95,9 +95,8 @@ def birkhoffSup (f : α → α) (φ : α → ℝ) (x : α) : EReal := iSup λ n 
 lemma birkhoffSup_measurable
     {f : α → α} (hf : Measurable f)
     {φ : α → ℝ} (hφ : Measurable φ) :
-    Measurable (birkhoffSup f φ) := by
-  unfold birkhoffSup
-  measurability
+    Measurable (birkhoffSup f φ) := measurable_iSup
+  (fun _ ↦ Measurable.coe_real_ereal (birkhoffSum_measurable hf hφ))
 
 def divergentSet (f : α → α) (φ : α → ℝ) : Set α := (birkhoffSup f φ)⁻¹' {⊤}
 
