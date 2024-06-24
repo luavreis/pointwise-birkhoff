@@ -349,14 +349,14 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
 
   let condexpψ := invCondexp μ f ψ
-  have condexpψ_const : condexpψ =ᵐ[μ] - λ _ ↦ ε
-  · calc μ[ψ|invariantSets f]
-      _ =ᵐ[μ] _ - _ := condexp_sub hφ (integrable_condexp.add (integrable_const _))
-      _ =ᵐ[μ] _ - (_ + _) := (condexp_add integrable_condexp (integrable_const _)).neg.add_left
-      _ =ᵐ[μ] _ - (_ + _) := (condexp_condexp_of_le (le_of_eq rfl)
-                            invariantSets_le).add_right.neg.add_left
-      _ = - μ[λ _ ↦ ε|invariantSets f] := by simp
-      _ = - λ _ ↦ ε := by rw [condexp_const invariantSets_le]
+  have condexpψ_const : condexpψ =ᵐ[μ] - λ _ ↦ ε := calc
+    μ[ψ|invariantSets f]
+    _ =ᵐ[μ] _ - _ := condexp_sub hφ (integrable_condexp.add (integrable_const _))
+    _ =ᵐ[μ] _ - (_ + _) := (condexp_add integrable_condexp (integrable_const _)).neg.add_left
+    _ =ᵐ[μ] _ - (_ + _) := (condexp_condexp_of_le (le_of_eq rfl)
+                              invariantSets_le).add_right.neg.add_left
+    _ = - μ[λ _ ↦ ε|invariantSets f] := by simp
+    _ = - λ _ ↦ ε := by rw [condexp_const invariantSets_le]
 
   have limsup_nonpos : ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f ψ · x) atTop nonneg
   · suffices ∀ᵐ x ∂μ, condexpψ x < 0 from
