@@ -1,7 +1,8 @@
+import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Dynamics.BirkhoffSum.Average
-import Mathlib.Tactic
 
-/-- If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+/-Port into `Mathlib.Logic.Function.Iterate`-/
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
 then `φ` remains invariant under any number of iterations of `f`. -/
 lemma invariant_iter (h : φ ∘ f = φ) : ∀ i, φ ∘ f^[i] = φ
   | 0 => rfl
@@ -11,8 +12,9 @@ lemma invariant_iter (h : φ ∘ f = φ) : ∀ i, φ ∘ f^[i] = φ
 
 open Finset in
 
-/-- If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
-then the Birkhoff sum of `φ` over `f` for `n` iterations is equal to `n • φ`. -/
+/-Port into `Mathlib.Dynamics.BirkhoffSum.Basic`-/
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+then the Birkhoff sum of `φ` over `f` for `n` iterations is equal to `n • φ`.-/
 theorem birkhoffSum_eq_of_invariant [AddCommMonoid M] {φ : α → M}
     (h : φ ∘ f = φ) : birkhoffSum f φ n = n • φ := by
   funext x
@@ -22,7 +24,8 @@ theorem birkhoffSum_eq_of_invariant [AddCommMonoid M] {φ : α → M}
 
 open Finset in
 
-/-- If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
+/-Port into `Mathlib.Dynamics.BirkhoffSum.Average`-/
+/--If a function `φ` is invariant under a function `f` (i.e., `φ ∘ f = φ`),
 then the Birkhoff average of `φ` over `f` for `n` iterations is equal to `φ`
 provided `0 < n`. -/
 theorem birkhoffAverage_eq_of_invariant
@@ -34,12 +37,14 @@ theorem birkhoffAverage_eq_of_invariant
   · norm_cast; linarith
   · apply nsmul_eq_smul_cast
 
+/-Port into `Mathlib.Dynamics.BirkhoffSum.Average`-/
 lemma birkhoffAverage_neg {φ : α → ℝ} :
     birkhoffAverage ℝ f (-φ) = - birkhoffAverage ℝ f φ := by
   funext n x
   simp [birkhoffAverage, birkhoffSum]
 
 open Finset in
+/-Port into `Mathlib.Dynamics.BirkhoffSum.Average`-/
 lemma birkhoffAverage_add {φ ψ : α → ℝ} :
     birkhoffAverage ℝ f (φ + ψ) = birkhoffAverage ℝ f φ + birkhoffAverage ℝ f ψ := by
   funext n x
@@ -47,6 +52,7 @@ lemma birkhoffAverage_add {φ ψ : α → ℝ} :
   linarith
 
 open Finset in
+/-Port into `Mathlib.Dynamics.BirkhoffSum.Average`-/
 lemma birkhoffAverage_sub {φ ψ : α → ℝ} :
     birkhoffAverage ℝ f (φ - ψ) = birkhoffAverage ℝ f φ - birkhoffAverage ℝ f ψ := by
   funext n x
