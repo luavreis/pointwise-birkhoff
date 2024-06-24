@@ -12,8 +12,7 @@ section BirkhoffMax
 
 variable {α : Type*}
 
-/-- `birkhoffMax f φ n` is the maximum of `birkhoffSum f φ i` for `i` ranging from `1` to `n + 1`.
--/
+/-- The maximum of `birkhoffSum f φ i` for `i` ranging from `1` to `n + 1`. -/
 def birkhoffMax (f : α → α) (φ : α → ℝ) : ℕ →o (α → ℝ) :=
   partialSups (birkhoffSum f φ ∘ .succ)
 
@@ -89,6 +88,7 @@ open MeasureTheory Filter Topology
 variable {α : Type*} [msα : MeasurableSpace α] (μ : Measure α := by volume_tac)
         [hμ : IsProbabilityMeasure μ]
 
+/-- The supremum of `birkhoffSum f φ (n + 1) x` over `n : ℕ`. -/
 def birkhoffSup (f : α → α) (φ : α → ℝ) (x : α) : EReal := iSup λ n ↦ ↑(birkhoffSum f φ (n + 1) x)
 
 lemma birkhoffSup_measurable
@@ -97,6 +97,7 @@ lemma birkhoffSup_measurable
     Measurable (birkhoffSup f φ) := measurable_iSup
   (fun _ ↦ Measurable.coe_real_ereal (birkhoffSum_measurable hf hφ))
 
+/-- The set of points `x` for which `birkhoffSup f φ x = ⊤`. -/
 def divergentSet (f : α → α) (φ : α → ℝ) : Set α := (birkhoffSup f φ)⁻¹' {⊤}
 
 lemma divergentSet_invariant : f x ∈ divergentSet f φ ↔ x ∈ divergentSet f φ := by
