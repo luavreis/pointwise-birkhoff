@@ -383,5 +383,3 @@ theorem birkhoffErgodicTheorem :
   linarith
 
 #print axioms birkhoffErgodicTheorem
-
-#minimize_imports
