@@ -9,8 +9,7 @@ section BirkhoffMax
 
 variable {α : Type*}
 
-/- note that we must compose with .succ, as we want to allow `birkhoffMax`
-   to be negative but `birkhoffSum f φ 0 = 0`.
+/-- `birkhoffMax f φ n` is the maximum of `birkhoffSum f φ i` for `i` ranging from `1` to `n + 1`.
 -/
 def birkhoffMax (f : α → α) (φ : α → ℝ) : ℕ →o (α → ℝ) :=
   partialSups (birkhoffSum f φ ∘ .succ)
@@ -310,8 +309,7 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
   · suffices Measurable (invCondexp μ f φ) by measurability
     exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
 
-  let condexpψ := invCondexp μ f ψ
-  have condexpψ_const : condexpψ =ᵐ[μ] - λ _ ↦ ε := calc
+  have condexpψ_const : invCondexp μ f ψ =ᵐ[μ] - λ _ ↦ ε := calc
     μ[ψ|invariantSets f]
     _ =ᵐ[μ] _ - _ := condexp_sub hφ (integrable_condexp.add (integrable_const _))
     _ =ᵐ[μ] _ - (_ + _) := (condexp_add integrable_condexp (integrable_const _)).neg.add_left
@@ -321,7 +319,7 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     _ = - λ _ ↦ ε := by rw [condexp_const invariantSets_le]
 
   have limsup_nonpos : ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f ψ · x) atTop nonneg
-  · suffices ∀ᵐ x ∂μ, condexpψ x < 0 from
+  · suffices ∀ᵐ x ∂μ, invCondexp μ f ψ x < 0 from
       limsup_birkhoffAverage_nonpos_of_condexp_neg μ hf ψ_integrable ψ_measurable this
     exact condexpψ_const.mono λ x hx ↦ by simp [hx, hε]
 
