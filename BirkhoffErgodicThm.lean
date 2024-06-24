@@ -3,6 +3,7 @@ import Mathlib.Dynamics.Ergodic.MeasurePreserving
 import Mathlib.MeasureTheory.Function.L1Space
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
+import Mathlib.MeasureTheory.MeasurableSpace.Invariants
 import Mathlib.Tactic
 import BirkhoffErgodicThm.PartialSupsPR
 import BirkhoffErgodicThm.BirkhoffSumPR
@@ -57,33 +58,9 @@ lemma birkhoffMax_measurable [MeasurableSpace α]
 
 end BirkhoffMax
 
-section InvariantSets
-
-open MeasureTheory
-
-def invariantSets [ms : MeasurableSpace α] (f : α → α) : MeasurableSpace α where
-  MeasurableSet' s := ms.MeasurableSet' s ∧ f⁻¹' s = s
-  measurableSet_empty := ⟨ms.measurableSet_empty, rfl⟩
-  measurableSet_compl s hs := ⟨ms.measurableSet_compl s hs.1, (by simp [hs.right])⟩
-  measurableSet_iUnion s hs := ⟨ms.measurableSet_iUnion s (λ i ↦ (hs i).left),
-    by simp; exact Set.iUnion_congr (λ i ↦ (hs i).right)⟩
-
-theorem invariantSets_le [ms : MeasurableSpace α] : invariantSets f ≤ ms := λ _ hs => hs.1
-
-theorem InvariantSets.invariant_of_measurable
-    [MeasurableSpace α] [MeasurableSpace β] [MeasurableSingletonClass β]
-    (f : α → α) (φ : α → β) (hφ : Measurable[invariantSets f] φ) :
-    φ ∘ f = φ := by
-  funext x
-  suffices x ∈ f⁻¹' (φ⁻¹' {φ x}) by simpa
-  rw [(hφ $ measurableSet_singleton (φ x)).2]
-  rfl
-
-end InvariantSets
-
 noncomputable section BirkhoffThm
 
-open MeasureTheory Filter Topology
+open MeasureTheory MeasurableSpace Filter Topology
 
 variable {α : Type*} [msα : MeasurableSpace α] (μ : Measure α := by volume_tac)
         [hμ : IsProbabilityMeasure μ]
@@ -140,7 +117,7 @@ lemma divergentSet_measurable
 lemma divergentSet_mem_invalg
     {f : α → α} (hf : Measurable f)
     {φ : α → ℝ} (hφ : Measurable φ) :
-    MeasurableSet[invariantSets f] (divergentSet f φ) :=
+    MeasurableSet[invariants f] (divergentSet f φ) :=
   /- should be `Set.ext divergentSet_invariant` but it is VERY slow -/
   ⟨divergentSet_measurable hf hφ, funext (λ _ ↦ propext divergentSet_invariant)⟩
 
@@ -225,9 +202,6 @@ lemma birkhoffMaxDiff_integrable : Integrable (birkhoffMaxDiff f φ n) μ := by
   · exact birkhoffMax_integrable μ hf hφ
   · exact (birkhoffMax_integrable μ hf hφ).aestronglyMeasurable
 
-lemma abs_le_bound {a b c : ℝ} : a ≤ b → b ≤ c → abs b ≤ max (abs a) (abs c) := by
-  simp_rw [abs_eq_max_neg, max_le_iff]; aesop
-
 lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
     Tendsto (λ n ↦ ∫ x in divergentSet f φ, birkhoffMaxDiff f φ n x ∂μ) atTop
             (𝓝 $ ∫ x in divergentSet f φ, φ x ∂ μ) := by
@@ -240,7 +214,7 @@ lemma int_birkhoffMaxDiff_in_divergentSet_tendsto :
     apply ae_of_all
     intro x
     rw [Real.norm_eq_abs]
-    exact abs_le_bound (by simp [birkhoffMaxDiff_aux]) (birkhoffMaxDiff_antitone (zero_le n) _)
+    exact abs_le_max_abs_abs (by simp [birkhoffMaxDiff_aux]) (birkhoffMaxDiff_antitone (zero_le n) _)
   · exact (ae_restrict_iff' (divergentSet_measurable hf.measurable hφ')).mpr
       (ae_of_all _ fun _ hx ↦ birkhoffMaxDiff_tendsto_of_mem_divergentSet hx)
 
@@ -274,14 +248,14 @@ lemma nullMeasurableSpace_le [ms : MeasurableSpace α] {μ : Measure α} :
   λ s hs ↦ ⟨s, hs, ae_eq_refl s⟩
 
 lemma divergentSet_zero_meas_of_condexp_neg
-    (h : ∀ᵐ x ∂μ, (μ[φ|invariantSets f]) x < 0) :
+    (h : ∀ᵐ x ∂μ, (μ[φ|invariants f]) x < 0) :
     μ (divergentSet f φ) = 0 := by
-  have pos : ∀ᵐ x ∂μ.restrict (divergentSet f φ), 0 < -(μ[φ|invariantSets f]) x
+  have pos : ∀ᵐ x ∂μ.restrict (divergentSet f φ), 0 < -(μ[φ|invariants f]) x
   · exact ae_restrict_of_ae (h.mono λ _ hx ↦ neg_pos.mpr hx)
   have ds_meas := divergentSet_mem_invalg hf.measurable hφ'
   by_contra hm; simp_rw [← pos_iff_ne_zero] at hm
   have : ∫ x in divergentSet f φ, φ x ∂μ < 0
-  · rw [← set_integral_condexp invariantSets_le hφ ds_meas,
+  · rw [← set_integral_condexp (invariants_le f) hφ ds_meas,
       ← Left.neg_pos_iff, ← integral_neg, integral_pos_iff_support_of_nonneg_ae]
     · unfold Function.support
       rw [(ae_iff_measure_eq _).mp]
@@ -290,20 +264,20 @@ lemma divergentSet_zero_meas_of_condexp_neg
         exact Eventually.ne_of_lt pos
       · apply measurableSet_support _
         apply (stronglyMeasurable_condexp).measurable.neg.le _
-        exact (le_trans invariantSets_le nullMeasurableSpace_le)
+        exact (le_trans (invariants_le f) nullMeasurableSpace_le)
     · exact ae_le_of_ae_lt pos
     · exact integrable_condexp.restrict.neg
   exact this.not_le (int_in_divergentSet_nonneg μ hf hφ hφ')
 
 lemma limsup_birkhoffAverage_nonpos_of_condexp_neg
-    (h : ∀ᵐ x ∂μ, (μ[φ|invariantSets f]) x < 0) :
+    (h : ∀ᵐ x ∂μ, (μ[φ|invariants f]) x < 0) :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x) atTop nonneg := by
   apply Eventually.mono _ λ _ ↦ birkhoffAverage_tendsto_nonpos_of_not_mem_divergentSet
   apply ae_iff.mpr; simp
   exact divergentSet_zero_meas_of_condexp_neg μ hf hφ hφ' h
 
 def invCondexp (μ : Measure α := by volume_tac) [IsProbabilityMeasure μ]
-    (f : α → α) (φ : α → ℝ) : α → ℝ := μ[φ|invariantSets f]
+    (f : α → α) (φ : α → ℝ) : α → ℝ := μ[φ|invariants f]
 
 theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f φ · x - (invCondexp μ f φ x + ε)) atTop nonneg := by
@@ -311,16 +285,16 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
   have ψ_integrable : Integrable ψ μ := hφ.sub (integrable_condexp.add (integrable_const _))
   have ψ_measurable : Measurable ψ
   · suffices Measurable (invCondexp μ f φ) by measurability
-    exact stronglyMeasurable_condexp.measurable.le (invariantSets_le)
+    exact stronglyMeasurable_condexp.measurable.le (invariants_le f)
 
   have condexpψ_const : invCondexp μ f ψ =ᵐ[μ] - λ _ ↦ ε := calc
-    μ[ψ|invariantSets f]
+    μ[ψ|invariants f]
     _ =ᵐ[μ] _ - _ := condexp_sub hφ (integrable_condexp.add (integrable_const _))
     _ =ᵐ[μ] _ - (_ + _) := (condexp_add integrable_condexp (integrable_const _)).neg.add_left
     _ =ᵐ[μ] _ - (_ + _) := (condexp_condexp_of_le (le_of_eq rfl)
-                              invariantSets_le).add_right.neg.add_left
-    _ = - μ[λ _ ↦ ε|invariantSets f] := by simp
-    _ = - λ _ ↦ ε := by rw [condexp_const invariantSets_le]
+                            (invariants_le f)).add_right.neg.add_left
+    _ = - μ[λ _ ↦ ε|invariants f] := by simp
+    _ = - λ _ ↦ ε := by rw [condexp_const (invariants_le f)]
 
   have limsup_nonpos : ∀ᵐ x ∂μ, Tendsto (birkhoffAverage ℝ f ψ · x) atTop nonneg
   · suffices ∀ᵐ x ∂μ, invCondexp μ f ψ x < 0 from
