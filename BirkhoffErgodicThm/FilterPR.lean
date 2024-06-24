@@ -2,13 +2,13 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Order.Filter.Basic
 
 /- can't find those -/
-
 /- Port into `Mathlib.Topology.EMetricSpace.Basic` -/
 /-- If two functions `f₁` and `f₂` are eventually equal with respect to a filter `f`,
 then adding to right the same function `f₃` to both `f₁` and `f₂` results in two functions that
 are also eventually equal with respect to the same filter `f`. -/
 lemma Filter.EventuallyEq.add_right {f : Filter α} {f₁ f₂ f₃ : α → ℝ} (h : f₁ =ᶠ[f] f₂) :
     f₁ + f₃ =ᶠ[f] f₂ + f₃ := h.mono λ x hx ↦ by simp [hx]
+
 
 /- Port into `Mathlib.Topology.EMetricSpace.Basic` -/
 /-- If two functions `f₁` and `f₂` are eventually equal with respect to a filter `f`,
