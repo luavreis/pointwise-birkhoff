@@ -1,12 +1,9 @@
-import Mathlib.Dynamics.BirkhoffSum.Average
-import Mathlib.Dynamics.Ergodic.MeasurePreserving
-import Mathlib.MeasureTheory.Function.L1Space
+import BirkhoffErgodicThm.BirkhoffSumPR
+import BirkhoffErgodicThm.FilterPR
+import BirkhoffErgodicThm.PartialSupsPR
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 import Mathlib.Tactic
-import BirkhoffErgodicThm.PartialSupsPR
-import BirkhoffErgodicThm.BirkhoffSumPR
-import BirkhoffErgodicThm.FilterPR
 
 section BirkhoffMax
 
@@ -388,3 +385,5 @@ theorem birkhoffErgodicTheorem :
   linarith
 
 #print axioms birkhoffErgodicTheorem
+
+#minimize_imports
