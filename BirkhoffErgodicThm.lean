@@ -8,6 +8,7 @@ import Mathlib.Tactic
 import BirkhoffErgodicThm.PartialSupsPR
 import BirkhoffErgodicThm.BirkhoffSumPR
 import BirkhoffErgodicThm.FilterPR
+import BirkhoffErgodicThm.InvariantsPR
 
 section BirkhoffMax
 
@@ -313,7 +314,7 @@ theorem birkhoffErgodicTheorem_aux (ε : ℝ) (hε : 0 < ε) :
     exact hn k (Nat.le_of_succ_le hk)
 
   have condexpφ_invariant : invCondexp μ f φ ∘ f = invCondexp μ f φ :=
-    InvariantSets.invariant_of_measurable _ _ stronglyMeasurable_condexp.measurable
+    invariant_of_measurable_invariants stronglyMeasurable_condexp.measurable
 
   intro n hn
   simp [ψ, birkhoffAverage_sub, birkhoffAverage_add, birkhoffAverage_eq_of_invariant
